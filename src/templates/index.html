@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realtime Messenger</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <div class="modal" id="welcome-modal">
+        <div class="modal-content">
+            <h2>Добро пожаловать в чат!</h2>
+            <input type="text" id="login-username" placeholder="Логин" maxlength="25">
+            <input type="password" id="login-password" placeholder="Пароль" maxlength="35">
+            <div class="modal-buttons">
+                <button id="register-btn-modal">Зарегистрироваться</button>
+                <button id="login-btn-modal">Войти</button>
+            </div>
+            <button id="guest-btn" class="full-width-btn guest-btn">Зайти как гость</button>
+        </div>
+    </div>
+
+    <div class="modal" id="change-nickname-modal" style="display:none">
+        <div class="modal-content">
+            <h2>Настройки профиля</h2>
+            <span class="close-modal" id="close-change-modal">&times;</span>
+            <input type="text" id="new-nickname-input" placeholder="Новый никнейм" maxlength="25">
+            <p>Выберите цвет:</p>
+            <div class="color-picker" id="change-color-picker"></div>
+            <button id="save-profile-btn" class="full-width-btn">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="modal" id="create-room-modal" style="display:none">
+        <div class="modal-content">
+            <h2>Создать комнату</h2>
+            <span class="close-modal" id="close-create-room-modal">&times;</span>
+            <input type="text" id="new-room-name-input" placeholder="Название комнаты" maxlength="25">
+            <input type="text" id="new-room-password-input" placeholder="Пароль (необязательно)">
+            <p>Выберите цвет:</p>
+            <div class="color-picker" id="room-color-picker"></div>
+            <div class="modal-buttons">
+                <button id="create-room-btn">Создать</button>
+                <button id="cancel-create-room">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="edit-room-modal" style="display:none">
+        <div class="modal-content">
+            <h2>Изменить комнату</h2>
+            <span class="close-modal" id="close-edit-room-modal">&times;</span>
+            <input type="text" id="edit-room-name-input" placeholder="Название комнаты" maxlength="25">
+            <input type="text" id="edit-room-password-input" placeholder="Пароль">
+            <p>Выберите цвет:</p>
+            <div class="color-picker" id="edit-room-color-picker"></div>
+            <div class="modal-buttons">
+                <button id="save-room-btn">Сохранить</button>
+            </div>
+            <button id="delete-room-btn-modal" class="full-width-btn btn-danger">Удалить комнату</button>
+        </div>
+    </div>
+
+    <div class="modal" id="room-password-modal" style="display:none">
+        <div class="modal-content">
+            <h2>Введите пароль</h2>
+            <span class="close-modal" id="close-password-modal">&times;</span>
+            <p>Эта комната защищена паролем</p>
+            <input type="password" id="room-password-input" placeholder="Пароль">
+            <button id="submit-password-btn" class="full-width-btn">Войти</button>
+        </div>
+    </div>
+
+    <div class="modal" id="users-modal" style="display:none">
+        <div class="modal-content">
+            <h2>Пользователи в комнате</h2>
+            <span class="close-modal" id="close-users-modal">&times;</span>
+            <div id="users-list"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay" style="display:none"></div>
+
+    <div class="header">
+        <button id="mobile-menu-btn" class="mobile-menu-btn" style="display:none">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="icon-block">Realtime Messenger</div>
+        <div class="header-right">
+            <button id="theme-toggle-btn" class="theme-toggle-btn" title="Сменить тему">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            <span class="user-block" id="username-display"></span>
+            <button id="auth-action-btn" class="auth-action-btn">Войти</button>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="left">
+            <h2>Чат-комнаты</h2>
+            <div class="search-block">
+                <div class="search-wrapper">
+                    <input type="text" id="search-input" placeholder="Поиск комнат...">
+                    <button id="search-mode-btn" class="search-mode-btn" title="Поиск по названию">
+                        <i class="fa-solid fa-font"></i>
+                    </button>
+                </div>
+            </div>
+            <button id="create-room-button" class="create-room-btn" style="display:none">+ Создать комнату</button>
+            <div id="rooms-list"></div>
+        </div>
+        <div class="right">
+            <div class="room-header" id="room-header" style="display:none">
+                <div>
+                    <h2 class="room-title" id="current-room-title"></h2>
+                    <div class="room-creator" id="room-creator-info"></div>
+                </div>
+                <div class="room-header-actions">
+                    <button id="edit-room-btn" class="edit-room-btn" style="display:none">Изменить</button>
+                    <button id="users-btn" class="users-btn" style="display:none">Пользователи</button>
+                    <button id="leave-room-btn" class="leave-room-btn">Выйти</button>
+                </div>
+            </div>
+            <hr id="room-header-hr" style="display:none">
+            <div class="right-content empty-state" id="messages-container">
+                <p>Выберите или создайте комнату чтобы начать общение</p>
+            </div>
+            <hr id="input-block-hr" style="display:none">
+            <div class="reply-block" id="reply-block" style="display:none">
+                <span id="reply-text"></span>
+                <button id="cancel-reply-btn" class="cancel-reply-btn" title="Отменить ответ">&times;</button>
+            </div>
+            <div class="attachment-preview" id="attachment-preview" style="display:none">
+                <div class="attachment-info">
+                    <i class="fa-solid fa-paperclip"></i>
+                    <span id="attachment-name"></span>
+                </div>
+                <button id="cancel-attachment-btn" class="cancel-attachment-btn"
+                    title="Убрать вложение">&times;</button>
+            </div>
+            <div class="input-block" id="input-block" style="display:none">
+                <button id="file-upload-btn" class="file-upload-btn" title="Прикрепить файл">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                <input type="file" id="file-input" style="display:none"
+                    accept=".png,.jpg,.jpeg,.gif,.mp4,.ogg,.wav,.mp3,.flac,.txt,.doc,.docx,.md">
+                <div class="input-wrapper">
+                    <input type="text" id="message-input" placeholder="Введите сообщение..." maxlength="3000">
+                    <span class="char-counter" id="char-counter">0 / 3000</span>
+                </div>
+                <div class="send-button" id="send-button">Отправить</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/adapt.js"></script>
+    <script src="/static/utils.js"></script>
+    <script src="/static/auth.js"></script>
+    <script src="/static/rooms.js"></script>
+    <script src="/static/chat.js"></script>
+    <script src="/static/websocket.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

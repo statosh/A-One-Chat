@@ -1,0 +1,14 @@
+__pycache__
+.pytest_cache
+.venv
+chat.db
+test_files
+documentation
+tests
+user_files
+_for_load
+src\ \[25.04.26\ -\ pre\ fetchfix\]/
+src\ \[25.04.26\ -\ pre\ fileload\]/
+src\ \[27.04.26\ -\ pre\ clean\]/
+src\ \[28.04.26\ -\ pre\ styleoverhaul\]/
+src\ \[28.04.26\ -\ pre\ adaptation\]/
