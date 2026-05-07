@@ -43,6 +43,38 @@ guest_tokens: Dict[str, dict] = {}
 AVAILABLE_COLORS = ['#007bff', '#28a745', '#dc3545',
                     '#ffc107', '#17a2b8', '#6f42c1', '#fd7e14', '#20c997']
 
+def get_room_for_access(room_id: int):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT id, password, creator_id FROM Room WHERE id=?', (room_id,))
+    room = c.fetchone()
+    conn.close()
+    return dict(room) if room else None
+
+
+def can_access_room(token: str, room_id: int, user: dict | None, guest: dict | None) -> bool:
+    room = get_room_for_access(room_id)
+
+    if not room:
+        return False
+
+    # Комната без пароля доступна всем валидным пользователям/гостям
+    if not room["password"]:
+        return True
+
+    # Админ может входить везде
+    if user and user.get("is_admin") == 1:
+        return True
+
+    # Создатель комнаты может входить
+    if user and room["creator_id"] == user["id"]:
+        return True
+
+    # Пользователь/гость уже вводил пароль
+    if token and manager.has_access(token, room_id):
+        return True
+
+    return False
 
 def check_rate_limit(ip: str, max_count: int = RATE_LIMIT_MAX_MESSAGES,
                      window: float = RATE_LIMIT_WINDOW,
@@ -360,7 +392,7 @@ async def get_username(user_id: int):
 
 
 @app.get("/api/rooms/{room_id}/messages")
-async def get_room_messages(room_id: int, limit: int = 250):
+async def get_room_messages(room_id: int, request: Request, limit: int = 250, token: str = ""):
     """
     Возвращает историю сообщений в указанной комнате.
     
@@ -377,6 +409,15 @@ async def get_room_messages(room_id: int, limit: int = 250):
     """
     if room_id < 1:
         raise HTTPException(400, "Неверный ID комнаты")
+
+    user = verify_token(token) if token else None
+    guest = guest_tokens.get(token) if token else None
+
+    if not user and not guest:
+        raise HTTPException(401, "Требуется авторизация или гостевой токен")
+
+    if not can_access_room(token, room_id, user, guest):
+        raise HTTPException(403, "Нет доступа к комнате")
 
     if limit > 250:
         limit = 250
@@ -489,6 +530,9 @@ async def create_message(message: MessageCreate, request: Request):
 
     if not user and not guest:
         raise HTTPException(401, "Требуется авторизация или гостевой токен")
+    
+    if not can_access_room(message.token, message.room_id, user, guest):
+        raise HTTPException(403, "Нет доступа к комнате")
 
     if not user or user['is_admin'] != 1:
         if not check_rate_limit(ip):
@@ -591,6 +635,9 @@ async def create_file_message(request: Request):
 
     if not user and not guest:
         raise HTTPException(401, "Требуется авторизация")
+    
+    if not can_access_room(token, room_id, user, guest):
+        raise HTTPException(403, "Нет доступа к комнате")
 
     file_path = os.path.join(UPLOAD_DIR, os.path.basename(file_url))
     if not os.path.exists(file_path):
@@ -1082,6 +1129,9 @@ async def check_room_password(room_id: int, data: PasswordCheck, request: Reques
     user = verify_token(data.token) if data.token else None
     guest = guest_tokens.get(data.token) if data.token else None
 
+    if not user and not guest:
+        raise HTTPException(401, "Требуется авторизация или гостевой токен")
+
     conn = get_db()
     c = conn.cursor()
     c.execute('SELECT password FROM Room WHERE id=?', (room_id,))
@@ -1094,12 +1144,7 @@ async def check_room_password(room_id: int, data: PasswordCheck, request: Reques
     valid = room['password'] == data.password
 
     if valid:
-        if user:
-            manager.grant_access(data.token, room_id)
-        if guest:
-            manager.grant_access(data.token, room_id)
-        if data.token:
-            manager.grant_access(data.token, room_id)
+        manager.grant_access(data.token, room_id)
 
     return {"valid": valid}
 
@@ -1194,32 +1239,26 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int):
     username = websocket.query_params.get("username", "Гость")
     color = websocket.query_params.get("color", "#888888")
 
-    if not re.match(r'^#[0-9a-fA-F]{6}$', color):
-        color = "#888888"
-
     user = verify_token(token) if token else None
     guest = guest_tokens.get(token) if token else None
 
+    if not user and not guest:
+        await websocket.close(code=4001, reason="Требуется авторизация")
+        return
+
+    if not can_access_room(token, room_id, user, guest):
+        await websocket.close(code=4003, reason="Нет доступа")
+        return
+
     if user:
-        if not manager.has_access(token, room_id):
-            conn = get_db()
-            c = conn.cursor()
-            c.execute(
-                'SELECT password, creator_id FROM Room WHERE id=?', (room_id,))
-            room = c.fetchone()
-            conn.close()
-
-            if room and room['password'] and user['is_admin'] != 1 and room['creator_id'] != user['id']:
-                await websocket.close(code=4003, reason="Нет доступа")
-                return
-
         username = sanitize_html(user['username'])
         color = user['color']
-    elif guest:
+    else:
         username = sanitize_html(guest["nickname"])
         color = guest["color"]
-    else:
-        username = sanitize_html(username) or "Гость"
+
+    if not re.match(r'^#[0-9a-fA-F]{6}$', color):
+        color = "#888888"
 
     user_id = user['id'] if user else 0
     is_admin = 1 if user and user['is_admin'] == 1 else 0

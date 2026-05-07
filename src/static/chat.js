@@ -454,7 +454,8 @@ function doSelectRoom(rid, rname, rcolor) {
     $('reply-block').style.display = 'none';
     pendingFile = null;
     $('attachment-preview').style.display = 'none';
-    fetch(`/api/rooms/${rid}/messages?limit=250`)
+    const accessToken = currentUser ? currentUser.token : sessionStorage.getItem('guest_token') || '';
+    fetch(`/api/rooms/${rid}/messages?limit=250&token=${encodeURIComponent(accessToken)}`)
         .then(r => {
             if (!r.ok) throw new Error('HTTP ' + r.status);
             return r.json();
@@ -654,7 +655,7 @@ $('users-btn').addEventListener('click', async () => {
         });
         clearTimeout(timeoutId);
         updateUsersModal(await r.json());
-    } catch (e) {}
+    } catch (e) { }
 });
 $('close-users-modal').addEventListener('click', () => toggleModal('users-modal', false));
 
