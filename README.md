@@ -99,39 +99,25 @@ git clone https://github.com/statosh/A-One-Chat.git
 cd A-One-Chat
 ```
 
-#### 2. Переход в директорию с исходным кодом
+#### 2. Создание виртуального окружения
 
-```bash
-cd src
-```
-
-#### 3. Создание виртуального окружения
-
-**Windows:**
 ```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
-**Linux / macOS:**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-#### 4. Установка зависимостей
+#### 3. Установка зависимостей
 
 ```bash
-pip install -r requirements.txt
+pip install -r src/requirements.txt
 ```
 
-#### 5. Инициализация базы данных
+#### 5. Запуск сервера разработки
 
 База данных инициализируется автоматически при первом запуске приложения. При необходимости можно удалить файл `chat.db` для сброса всех данных.
 
-#### 6. Запуск сервера разработки
-
 ```bash
+cd src
 uvicorn main:app --reload
 ```
 
