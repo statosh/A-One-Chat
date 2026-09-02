@@ -56,7 +56,7 @@ $('new-room-name-input').addEventListener('keypress', async e => {
     }
 });
 
-$('edit-room-btn').addEventListener('click', function() {
+$('edit-room-btn').addEventListener('click', function () {
     const room = allRooms.find(r => r.id === currentRoomId);
     if (!room) return;
 
@@ -153,7 +153,7 @@ $('submit-password-btn').addEventListener('click', async () => {
             },
             body: JSON.stringify({
                 password: pwd,
-                token: currentUser ? currentUser.token : ''
+                token: currentUser ? currentUser.token : sessionStorage.getItem('guest_token') || ''
             }),
             signal: controller.signal
         });
@@ -285,7 +285,7 @@ async function filterRooms(query) {
                 RoomsState.userCountsCache = d.counts;
                 updateUserCounts(d.counts);
             })
-            .catch(() => {});
+            .catch(() => { });
     }
 }
 
@@ -449,7 +449,7 @@ async function createRoomElement(room) {
 
     div.innerHTML = `<span class="room-color-dot" style="background-color:${room.color}"></span><div style="flex:1;min-width:0;"><h3 class="room-title">${escapeHtml(room.name)}</h3>${sub}</div><span class="user-count" style="display:none;">0</span>`;
 
-    div.addEventListener('click', function() {
+    div.addEventListener('click', function () {
         const roomId = parseInt(this.dataset.roomId);
         const roomName = this.dataset.roomName;
         const roomColor = this.dataset.roomColor;
@@ -529,7 +529,7 @@ async function rebuildRoomSections(newRooms, append) {
             RoomsState.userCountsCache = d.counts;
             updateUserCounts(d.counts);
         })
-        .catch(() => {});
+        .catch(() => { });
 }
 
 /**
